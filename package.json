@@ -1,0 +1,10 @@
+{
+	"name" : "webrtc-tracker-nodejs", 
+	"version" : "1.0.0", 
+	"dependencies" : {
+		"express" : "2", 
+		"socket.io" :  "0.9.13",
+		"underscore" : "1.4.3"
+	},
+	"main" : "main.js"
+}
