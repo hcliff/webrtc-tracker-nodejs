@@ -6,7 +6,7 @@ A webrtc compliant bittorrent tracker, written in nodejs
 Installation
 =====================
 
-1. Set up an amazon ec2 instance or similar (must support websockets).
+1. [Set up an amazon ec2 instance](https://github.com/hcliff/webrtc-tracker-nodejs/wiki/ec2) or similar (must support websockets).
 2. SSH in, and run the following ```wget --no-check-certificate https://github.com/hcliff/webrtc-tracker-nodejs/blob/master/setup.sh && bash setup.sh```
 3. done.
 
