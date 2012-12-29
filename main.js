@@ -25,6 +25,8 @@ var io = sio.listen(app)
 
 maxNumwant = 20;
 defaultNumwant = 10;
+// remove this for an open tracker
+allowedTorrents = ["7fd43a5b9f836000936420ee6f4bb98f7c6d57c1"]
 
 /**
  * Start reactor, listening for websocket events
@@ -42,93 +44,106 @@ app.listen(3000, function () {
 io.sockets.on('connection', function (socket) {
 
     // The peer has started a new torrent
-  socket.on('started', function (data) {
+    socket.on('started', function (data) {
 
-    // if no peers currently track this torrent create an entry
-    if(! _.has(peers, data['info_hash']))
-        peers[data['info_hash']] = {};
+        if (!allowedTorrents ||
+            (_.indexOf(allowedTorrents, data['info_hash']) !== -1)){
 
-    // info on the peer
-    peer = {
-        numwant : _.min([data.numwant || 20, maxNumwant]),
-        downloaded : data.downloaded || 0,
-        uploaded : _.max([data.uploaded || 0, 0]),
-        left : _.max([data.left || 0, 0]),
-        socket : this,
-    };
+            // if no peers currently track this torrent create an entry
+            if(! _.has(peers, data['info_hash']))
+                peers[data['info_hash']] = {};
 
-    // Add the peer to the list of torrent peers
-    peers[data['info_hash']][data['peer_id']] = peer;
+            // info on the peer
+            peer = {
+                numwant : _.min([data.numwant || 20, maxNumwant]),
+                downloaded : data.downloaded || 0,
+                uploaded : _.max([data.uploaded || 0, 0]),
+                left : _.max([data.left || 0, 0]),
+                socket : this,
+            };
 
-    // Remove the peer from the list on disconnect
-    this.on('disconnect', function(){
-        console.log('removing peer:'+data['peer_id']+' torrent:'+data['info_hash'])
-        delete peers[data['info_hash']][data['peer_id']];
+            // Add the peer to the list of torrent peers
+            peers[data['info_hash']][data['peer_id']] = peer;
+
+            // Remove the peer from the list on disconnect
+            this.on('disconnect', function(){
+                console.log('removing peer:'+data['peer_id']+' torrent:'+data['info_hash'])
+                delete peers[data['info_hash']][data['peer_id']];
+            });
+
+            console.log('adding peer to torrent:'+data['info_hash']+' peer:'+data['peer_id'], peer)
+
+         //     if(info_hash.length != 40 || peer_id.length < 20 || 
+         //        peer_id.length > 50 || uploaded < 0 || 
+         //        left < 0 || downloaded < 0) {
+            //  console.log(info_hash)
+            //  console.log(info_hash.length)
+            //  error(response, "Invalid request"); return false;
+            // }
+
+            // get offers for this peer
+            get_peers(data);
+
+        }
+
     });
 
-    console.log('adding peer to torrent:'+data['info_hash']+' peer:'+data['peer_id'], peer)
-
- //     if(info_hash.length != 40 || peer_id.length < 20 || 
- //        peer_id.length > 50 || uploaded < 0 || 
- //        left < 0 || downloaded < 0) {
-    //  console.log(info_hash)
-    //  console.log(info_hash.length)
-    //  error(response, "Invalid request"); return false;
-    // }
-
-    // get offers for this peer
-    get_peers(data);
-
-  });
-
     // The peer (peer a) has provided an offer (for peer b)
-  socket.on('offer', function(data){
+    socket.on('offer', function(data){
 
-    console.log('making offer on torrent:'+data['info_hash']+' to peer:'+data['peer_id'])
+        console.log('making offer on torrent:'+data['info_hash']+' to peer:'+data['to_peer_id']);
 
-    try{
-        // check the peer b actually exists
-        peer = peers[data['info_hash']][data['to_peer']];
-        // does peer b still want peers
-        if (peer.numwant > 0) {
-            // send peer b the offer from peer a
-            peer.socket.emit('offer', {
-                'sdp' : data['sdp'],
-                'torrent_hash' : data['torrent_hash']
-            });
+        try{
+            // check the peer b actually exists
+            from_peer = peers[data['info_hash']][data['peer_id']];
+            to_peer = peers[data['info_hash']][data['to_peer_id']];
+            // does peer b still want peers
+            if (to_peer.numwant > 0) {
+                // send peer b the offer from peer a
+                to_peer.socket.emit('offer', {
+                    'sdp' : data['sdp'],
+                    'info_hash' : data['info_hash'],
+                    'peer_id' : data['peer_id']
+                });
+            }
+        } catch(e){
+            console.log('torrent or peer not found when making offer');
         }
-    } catch(e){
-        console.log('torrent or peer not found when making offer');
-    }
 
-  });
+    });
 
     // The peer (peer b) has provided an offer (for peer a)
     socket.on('answer', function(data){
 
         try{
             // check the peers exist and have registered to this torrent
-            from_peer = peers[data['info_hash']]['peer_id'];
-            to_peer = peers[data['info_hash']]['to_peer'];
+            from_peer = peers[data['info_hash']][data['peer_id']];
+            to_peer = peers[data['info_hash']][data['to_peer_id']];
             // does peer a still want peers
             if (to_peer.numwant > 0) {
                 // send peer a the answer from peer b
                 to_peer.socket.emit('answer', {
                     'sdp' : data['sdp'],
-                    'torrent_hash' : data['torrent_hash']
+                    'info_hash' : data['info_hash'],
+                    'peer_id' : data['peer_id']
                 });
                 // we assume that an answer indicates the connections going to happen
                 from_peer.numwant -= 1;
                 to_peer.numwant -= 1;
             }
         } catch(e){
-        
+            console.log('torrent or peer not found when answering');
         }
     });
 
     // The peer needs more peers
     socket.on('need_peers', function(data){
-        get_peers(data);
+        try{
+            peer = peers[data['info_hash']][data['peer_id']];
+            get_peers(data);
+        } catch(e){
+            console.log('torrent or peer not found when grabbing peers');
+        }
     });
 
 });
