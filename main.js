@@ -33,8 +33,8 @@ allowedTorrents = ["7fd43a5b9f836000936420ee6f4bb98f7c6d57c1"]
  */
 
 app.listen(80, function () {
-  // var addr = app.address();
-  // console.log('app listening on http://' + addr.address + ':' + addr.port);
+  var addr = app.address();
+  console.log('app listening on http://' + addr.address + ':' + addr.port);
 });
 
 /**
