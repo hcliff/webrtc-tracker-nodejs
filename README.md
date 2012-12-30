@@ -24,6 +24,7 @@ Issues
 * No flood protection or similar, *run this at your own risk*
 * Doesn't use memcache, simply stores peers in a global variable
 * Mostly a proof of concept, built for simplicity and use as reference
+* *Doesn't use https* - User connection strings are sent cleartext, socket.io does support https/wss so this can be done.
 
 Spec
 =====================
