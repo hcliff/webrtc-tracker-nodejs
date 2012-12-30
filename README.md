@@ -12,7 +12,7 @@ Installation
 
 Notes
 =====================
-* Listens on port 3000 by default, change this if you need
+* Listens on port 80 by default, change this if you need
 
 Why
 =====================
