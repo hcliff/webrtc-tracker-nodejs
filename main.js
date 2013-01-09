@@ -26,7 +26,7 @@ var io = sio.listen(app)
 maxNumwant = 20;
 defaultNumwant = 10;
 // remove this for an open tracker
-allowedTorrents = ["7fd43a5b9f836000936420ee6f4bb98f7c6d57c1"]
+allowedTorrents = ["7fd43a5b9f836000936420ee6f4bb98f7c6d57c1", "56cabd5498483532ae0f0f5e671d6fbe9bb21647"]
 
 /**
  * Start reactor, listening for websocket events
