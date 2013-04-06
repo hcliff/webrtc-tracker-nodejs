@@ -26,7 +26,7 @@ var io = sio.listen(app)
 maxNumwant = 20;
 defaultNumwant = 10;
 // remove this for an open tracker
-allowedTorrents = ["7fd43a5b9f836000936420ee6f4bb98f7c6d57c1", "56cabd5498483532ae0f0f5e671d6fbe9bb21647"]
+allowedTorrents = null;
 
 /**
  * Start reactor, listening for websocket events
@@ -131,6 +131,24 @@ io.sockets.on('connection', function (socket) {
                 from_peer.numwant -= 1;
                 to_peer.numwant -= 1;
             }
+        } catch(e){
+            console.log('torrent or peer not found when answering');
+        }
+    });
+
+    // The peer (peer b) has provided an offer (for peer a)
+    socket.on('ice-candidate', function(data){
+
+        try{
+            // check the peers exist and have registered to this torrent
+            from_peer = peers[data['info_hash']][data['peer_id']];
+            to_peer = peers[data['info_hash']][data['to_peer_id']];
+            
+            to_peer.socket.emit('ice-candidate', {
+                'candidate' : data['candidate'],
+                'info_hash' : data['info_hash'],
+                'peer_id' : data['peer_id']
+            });
         } catch(e){
             console.log('torrent or peer not found when answering');
         }
