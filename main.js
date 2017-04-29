@@ -2,9 +2,10 @@
  * Module dependencies.
  */
 
-var express = require('express'), 
-    sio = require('socket.io'),
-    _ = require('underscore');
+var express = require('express');
+
+var sio = require('socket.io');
+var _ = require('underscore');
 
 /**
  * App.
@@ -16,8 +17,9 @@ var app = express.createServer();
  * Global vars
  */
 
-var io = sio.listen(app)
-  , peers = {};
+var io = sio.listen(app);
+
+var peers = {};
 
 /**
  * Config vars
@@ -32,7 +34,7 @@ allowedTorrents = null;
  * Start reactor, listening for websocket events
  */
 
-app.listen(80, function () {
+app.listen(80, () => {
   var addr = app.address();
   console.log('app listening on http://' + addr.address + ':' + addr.port);
 });
@@ -41,7 +43,7 @@ app.listen(80, function () {
  * The meat
  */
 
-io.sockets.on('connection', function (socket) {
+io.sockets.on('connection', socket => {
 
     // The peer has started a new torrent
     socket.on('started', function (data) {
@@ -66,7 +68,7 @@ io.sockets.on('connection', function (socket) {
             peers[data['info_hash']][data['peer_id']] = peer;
 
             // Remove the peer from the list on disconnect
-            this.on('disconnect', function(){
+            this.on('disconnect', () => {
                 console.log('removing peer:'+data['peer_id']+' torrent:'+data['info_hash'])
                 delete peers[data['info_hash']][data['peer_id']];
             });
@@ -89,7 +91,7 @@ io.sockets.on('connection', function (socket) {
     });
 
     // The peer (peer a) has provided an offer (for peer b)
-    socket.on('offer', function(data){
+    socket.on('offer', data => {
 
         console.log('making offer on torrent:'+data['info_hash']+' to peer:'+data['to_peer_id']);
 
@@ -113,7 +115,7 @@ io.sockets.on('connection', function (socket) {
     });
 
     // The peer (peer b) has provided an offer (for peer a)
-    socket.on('answer', function(data){
+    socket.on('answer', data => {
 
         try{
             // check the peers exist and have registered to this torrent
@@ -137,7 +139,7 @@ io.sockets.on('connection', function (socket) {
     });
 
     // The peer (peer b) has provided an offer (for peer a)
-    socket.on('ice-candidate', function(data){
+    socket.on('ice-candidate', data => {
 
         try{
             // check the peers exist and have registered to this torrent
@@ -155,7 +157,7 @@ io.sockets.on('connection', function (socket) {
     });
 
     // The peer needs more peers
-    socket.on('need_peers', function(data){
+    socket.on('need_peers', data => {
         try{
             peer = peers[data['info_hash']][data['peer_id']];
             get_peers(data);
@@ -166,12 +168,12 @@ io.sockets.on('connection', function (socket) {
 
 });
 
-var get_peers = function(data){
+var get_peers = data => {
 
     // Only use peers that still want peers
-    numwant_filter = function(peer){return peer.numwant > 0};
+    numwant_filter = peer => peer.numwant > 0;
     // Don't send offer requests to yourself
-    self_filter = function(_, peer_id){return peer_id == data['peer_id']}
+    self_filter = (_, peer_id) => peer_id == data['peer_id']
 
     // randomly pick some peers
     return_peers = _.shuffle(
@@ -186,7 +188,7 @@ var get_peers = function(data){
     return_sockets = _.pluck(return_peers.slice(0, numwant), 'socket');
 
     // loop through our randomly picked peers and request offers from them
-    _.each(return_sockets, function(s){
+    _.each(return_sockets, s => {
         // console.log('emit to ')
         s.emit('need_offer', {
             'peer_id' : data['peer_id'],
